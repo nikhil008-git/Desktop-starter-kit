@@ -1,0 +1,21 @@
+@import "tailwindcss";
+
+:root {
+  color-scheme: light dark;
+  font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+  /* Desktop apps don't select UI text on drag the way web pages do. */
+  user-select: none;
+  cursor: default;
+}
+
+/*
+ * The window has no title bar (`titleBarStyle: "hiddenInset"`), so something
+ * has to be draggable or the window cannot be moved. Anything clickable inside
+ * a drag region needs `no-drag`, or clicking it moves the window instead.
+ */
+@utility drag {
+  -webkit-app-region: drag;
+}
+@utility no-drag {
+  -webkit-app-region: no-drag;
+}
