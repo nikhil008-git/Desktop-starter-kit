@@ -1,0 +1,31 @@
+{
+  "name": "desktop-starter-kit",
+  "private": true,
+  "packageManager": "npm@11.16.0",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "postinstall": "node scripts/setup-env.mjs",
+    "dev": "turbo run dev",
+    "dev:api": "npm run dev -w @starter/api",
+    "dev:web": "npm run dev -w @starter/web",
+    "dev:desktop": "npm run dev -w @starter/desktop",
+    "build": "turbo run build",
+    "typecheck": "turbo run typecheck",
+    "db:generate": "npm run db:generate -w @starter/db",
+    "db:push": "npm run db:push -w @starter/db",
+    "db:studio": "npm run db:studio -w @starter/db"
+  },
+  "devDependencies": {
+    "turbo": "^2.11.3",
+    "typescript": "^5.9.3"
+  },
+  "allowScripts": {
+    "@prisma/client": true,
+    "@prisma/engines": true,
+    "esbuild": true,
+    "prisma": true
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "ui": "stream",
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": [".next/**", "!.next/cache/**", "out/**", "dist/**"]
+    },
+    "typecheck": {
+      "dependsOn": ["^db:generate"]
+    },
+    "db:generate": {
+      "cache": false
+    },
+    "db:push": {
+      "cache": false
+    },
+    "dev": {
+      // Syncs the schema into the database (and regenerates the client)
+      // before the API starts, so a fresh clone needs only `npm run dev`.
+      "dependsOn": ["^db:push"],
+      "cache": false,
+      "persistent": true
+    }
+  }
+}

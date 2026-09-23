@@ -1,0 +1,108 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Better Auth ────────────────────────────────────────────────────────────
+// These four tables are Better Auth's own. Field names must match what its
+// Prisma adapter expects; `npx @better-auth/cli generate` prints the same.
+
+model User {
+  id            String        @id
+  name          String
+  email         String        @unique
+  emailVerified Boolean       @default(false)
+  image         String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  sessions      Session[]
+  accounts      Account[]
+  deviceTokens  DeviceToken[]
+  desktopCodes  DesktopCode[]
+
+  @@map("user")
+}
+
+// A browser login. Better Auth puts `token` in the session cookie.
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("verification")
+}
+
+// ─── Desktop app ────────────────────────────────────────────────────────────
+
+// A desktop app's login: one row per signed-in machine, separate from the
+// browser's Session so each can be signed out without touching the other.
+//
+// Only the SHA-256 of the token is stored. A leaked database then holds
+// nothing that can be sent as `Authorization: Bearer ...`.
+model DeviceToken {
+  id         String    @id @default(cuid())
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash  String    @unique
+  name       String?
+  createdAt  DateTime  @default(now())
+  lastUsedAt DateTime?
+
+  @@map("device_token")
+}
+
+// The one-time pairing code that travels in the `starterkit://` link.
+//
+// A URL is not private. The OS logs it, and another app can register the same
+// scheme, so the code alone is worthless. Redeeming it needs the verifier
+// whose hash is `challenge`, and that verifier never left the desktop app.
+model DesktopCode {
+  codeHash  String   @id
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  challenge String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@map("desktop_code")
+}
