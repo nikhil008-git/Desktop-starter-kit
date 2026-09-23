@@ -1,10 +1,17 @@
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { useUser } from "../components/ProtectedRoute";
+import type { AuthUser } from "../../../shared/contract";
 
 export function Dashboard() {
-  const user = useUser();
   const navigate = useNavigate();
+  const [user, setUser] = useState<AuthUser | null>(null);
+
+  useEffect(() => {
+    window.api.auth.me().then((state) => {
+      if (state.status === "signed-in") setUser(state.user);
+    });
+  }, []);
 
   async function signOut() {
     await window.api.auth.signOut();
@@ -14,8 +21,8 @@ export function Dashboard() {
   return (
     <div className="flex h-full flex-col items-center justify-center gap-6 px-6 text-center">
       <div className="flex flex-col gap-2">
-        <h1 className="text-2xl font-semibold">You're in, {user.name}!</h1>
-        <p className="text-sm text-neutral-500">{user.email}</p>
+        <h1 className="text-2xl font-semibold">You're in{user ? `, ${user.name}` : ""}!</h1>
+        <p className="text-sm text-neutral-500">{user?.email}</p>
       </div>
       <p className="max-w-sm text-sm text-neutral-500">
         This is your desktop app's home. Build from here. Every call to your API goes through{" "}

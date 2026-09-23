@@ -194,9 +194,14 @@ React then calls `await window.api.projects()`, fully typed.
 
 ### Protected routes
 
-`ProtectedRoute` asks main who is signed in, then renders the page, redirects
-to `/login`, or shows a retry screen when the server is unreachable (the
-user is still signed in, so sending them to log in again would not help).
+`ProtectedRoute` asks main who is signed in, shows a loading screen while it
+waits, then renders the page or redirects to `/login`. Main does the token
+part: it reads the token from the keychain and calls `/api/me` with it.
+
+```tsx
+const state = await window.api.auth.me();
+setAuthenticated(state.status === "signed-in");
+```
 
 ```tsx
 <Route
@@ -208,8 +213,6 @@ user is still signed in, so sending them to log in again would not help).
   }
 />
 ```
-
-Inside, `useUser()` returns the signed-in user.
 
 The app uses `HashRouter` because a built Electron app loads from `file://`,
 where browser-style paths never match a route.
@@ -231,7 +234,7 @@ where browser-style paths never match a route.
 | Every network call the app makes      | `apps/desktop/src/main/api.ts`                               |
 | IPC channel names and types           | `apps/desktop/src/shared/contract.ts`                        |
 | What the UI is allowed to call        | `apps/desktop/src/preload/index.ts`                          |
-| `ProtectedRoute` and `useUser`        | `apps/desktop/src/renderer/src/components/ProtectedRoute.tsx` |
+| `ProtectedRoute`                      | `apps/desktop/src/renderer/src/components/ProtectedRoute.tsx` |
 
 ## Scripts
 

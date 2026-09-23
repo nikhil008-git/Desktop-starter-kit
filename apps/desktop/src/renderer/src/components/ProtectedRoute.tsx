@@ -1,61 +1,27 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Navigate } from "react-router-dom";
 
-import type { AuthState, AuthUser } from "../../../shared/contract";
 import { LoadingScreen } from "./LoadingScreen";
 
-const UserContext = createContext<AuthUser | null>(null);
-
-/** The signed-in user, inside a ProtectedRoute. */
-export function useUser(): AuthUser {
-  const user = useContext(UserContext);
-  if (!user) throw new Error("useUser() used outside <ProtectedRoute>");
-  return user;
-}
-
-/**
- * Renders its children only for a signed-in user.
- *
- * It asks main rather than checking a token itself: the token never reaches
- * the renderer, and the renderer cannot make network requests anyway. Main
- * reads the token from the keychain and calls /api/me with it.
- */
 export function ProtectedRoute({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<AuthState | null>(null);
-  const [attempt, setAttempt] = useState(0);
+  const [checking, setChecking] = useState(true);
+  const [authenticated, setAuthenticated] = useState(false);
 
   useEffect(() => {
-    let cancelled = false;
-    // `cancelled` guards against StrictMode's double effect in dev, and against
-    // an answer arriving after the user has already navigated away.
-    window.api.auth.me().then((next) => !cancelled && setState(next));
-    return () => {
-      cancelled = true;
-    };
-  }, [attempt]);
+    async function check() {
+      // Main reads the token from the keychain and calls /api/me with it.
+      // The renderer cannot do either: it has no Node, and its CSP blocks
+      // the network.
+      const state = await window.api.auth.me();
 
-  if (!state) return <LoadingScreen />;
+      setAuthenticated(state.status === "signed-in");
+      setChecking(false);
+    }
 
-  if (state.status === "signed-out") return <Navigate to="/login" replace />;
+    check();
+  }, []);
 
-  if (state.status === "offline") {
-    // Not a redirect to /login: the user *is* signed in, the server is just
-    // unreachable. Sending them to sign in again would not help.
-    return (
-      <div className="flex h-full flex-col items-center justify-center gap-3">
-        <p className="text-sm text-neutral-500">{state.message}</p>
-        <button
-          onClick={() => {
-            setState(null);
-            setAttempt((n) => n + 1);
-          }}
-          className="rounded-lg border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-700"
-        >
-          Try again
-        </button>
-      </div>
-    );
-  }
+  if (checking) return <LoadingScreen />;
 
-  return <UserContext.Provider value={state.user}>{children}</UserContext.Provider>;
+  return authenticated ? children : <Navigate to="/login" replace />;
 }
